@@ -1,0 +1,12 @@
+arctic
+IPython
+jinja2
+lxml
+numpy
+pandas
+pillow
+pyEX>=0.0.10
+socketIO_client_nexus
+tornado
+tqdm
+ujson
