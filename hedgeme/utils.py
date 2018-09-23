@@ -81,3 +81,10 @@ def yesterday():
     '''yesterday is anytime before the previous 4pm close'''
     today = date.today()
     return datetime(year=today.year, month=today.month, day=today.day) - timedelta(days=1)
+
+
+@lru_cache(1)
+def last_month():
+    '''last_month is one month before today'''
+    today = date.today()
+    return datetime(year=today.year, month=today.month, day=today.day) - timedelta(months=1)

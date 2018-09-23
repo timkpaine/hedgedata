@@ -31,6 +31,6 @@ LOGGING_CONFIG = {
 }
 
 logging.config.dictConfig(LOGGING_CONFIG)
-LOG = logging.getLogger('')  # factory method
+log = logging.getLogger('')  # factory method
 
-LOG.setLevel(logging.CRITICAL)
+log.setLevel(logging.CRITICAL)
