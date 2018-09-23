@@ -1,3 +1,4 @@
+import pandas as pd
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from .log_utils import log
@@ -34,7 +35,7 @@ class Distributer(object):
                             ret = []
                             for item in chunk:
                                 try:
-                                    val = partial(function, **function_kwargs)(chunk)
+                                    val = partial(function, **function_kwargs)(item)
                                     ret.append(val)
 
                                 except Exception as e:
@@ -43,7 +44,7 @@ class Distributer(object):
                                     attempts += 1
                                     if attempts >= max_attempts:
                                         if skip_if_error:
-                                            ret.append(None)
+                                            ret.append(pd.DataFrame())
                                         else:
                                             raise e
 

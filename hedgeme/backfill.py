@@ -31,6 +31,7 @@ def whichBackfill(field):
     elif field == 'COMPANY':
         return backfillCompany
     else:
+        print(field)
         raise NotImplemented
 
 

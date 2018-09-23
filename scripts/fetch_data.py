@@ -1,11 +1,13 @@
 import os
 import os.path
 import pandas as pd
+import pyEX as p
 from hedgeme.fetch import whichFetch
 from hedgeme.backfill import whichBackfill
 from hedgeme.data import FIELDS
 from hedgeme.distributor import Distributer
 from hedgeme.log_utils import log
+
 
 _DISTRIBUTOR = Distributer.default()
 
@@ -30,6 +32,7 @@ def defaults(field):
     elif field == 'COMPANY':
         return ['KEY']
     else:
+        print(field)
         raise NotImplemented
 
 
@@ -50,6 +53,7 @@ def backfillData(symbols, fields, output='cache'):
         for symbol, data in whichBackfill(field)(_DISTRIBUTOR, symbols):
             log.critical('Filling %s for %s' % (symbol, field))
             data.reset_index(inplace=True)
+
             if field == 'PEERS':
                 data = data[['peer']]
 
@@ -60,5 +64,7 @@ def backfillData(symbols, fields, output='cache'):
         data_orig[~data_orig.index.duplicated(keep='first')].to_csv(os.path.join('cache', field) + '.csv')
 
 
-FIELDS.remove('TICK')
-backfillData(['AAPL', 'IBM', 'TSLA'], FIELDS)
+if __name__ == '__main__':
+    FIELDS.remove('TICK')
+    FIELDS.remove('DAILY')
+    backfillData(p.symbolsDF().index.tolist(), FIELDS)
