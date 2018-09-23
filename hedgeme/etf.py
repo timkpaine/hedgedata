@@ -1,6 +1,31 @@
 import pandas as pd
+import pyEX as p
+import string
 from functools import lru_cache
 from .define import ETF_URL, POPULAR_ETFS_URL
+
+_TRANSLATOR = str.maketrans('', '', string.punctuation)
+_OVERRIDES = {
+    'PCLN': 'BKNG'
+}
+
+
+@lru_cache(1)
+def symbols():
+    return p.symbolsDF().index.values.tolist()
+
+
+@lru_cache(1)
+def symbols_map():
+    ret = {}
+    for x in symbols():
+        ret[x] = x
+        new_x = x.translate(_TRANSLATOR)
+        if new_x not in ret:
+            ret[new_x] = x
+    for k, v in _OVERRIDES.items():
+        ret[k] = v
+    return ret
 
 
 @lru_cache(None)
@@ -8,8 +33,9 @@ def composition(key):
     comp = pd.read_html(ETF_URL % key, attrs={'id': 'etfs-that-own'})[0]
     comp['% of Total'] = comp['% of Total'].str.rstrip('%').astype(float) / 100.0
     comp.columns = ['Symbol', 'Name', 'Percent']
-    comp[['Symbol', 'Percent', 'Name']]
-    return comp
+
+    comp['Symbol'].apply(lambda x: symbols_map().get(x, x))
+    return comp[['Symbol', 'Percent', 'Name']]
 
 
 def constituents(key):

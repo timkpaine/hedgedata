@@ -11,7 +11,7 @@ def chunks(l, n):
 
 
 class Distributer(object):
-    def __init__(self, kind, chunkSize=20):
+    def __init__(self, kind, chunkSize=5):
         if kind == 'thread':
             self.pool = ThreadPool(chunkSize)
             self.chunk_size = chunkSize
@@ -30,8 +30,6 @@ class Distributer(object):
                             ret = self.pool.map(partial(function, **function_kwargs), chunk)
                             attempts = max_attempts
                         else:
-                            log.critical('distributor failed, running individually')
-
                             ret = []
                             for item in chunk:
                                 try:
