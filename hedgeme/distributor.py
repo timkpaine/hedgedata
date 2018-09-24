@@ -9,7 +9,6 @@ def chunks(l, n):
     '''MISH'''
     if len(l) > 0:
         for i in range(0, len(l), n):
-            print('yielding', i, i+n)
             yield l[i:i + n]
 
 
@@ -40,8 +39,6 @@ class Distributer(object):
                                     ret.append(val)
 
                                 except Exception as e:
-                                    log.critical(e)
-
                                     attempts += 1
                                     if attempts >= max_attempts:
                                         if skip_if_error:
