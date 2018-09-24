@@ -1,17 +1,19 @@
 import pandas as pd
 from functools import partial
 from multiprocessing.pool import ThreadPool
-from .log_utils import log
+import logging
+log = logging.getLogger('')
 
 
 def chunks(l, n):
     '''MISH'''
     for i in range(0, len(l), n):
+        print('yielding', i, i+n)
         yield l[i:i + n]
 
 
 class Distributer(object):
-    def __init__(self, kind, chunkSize=5):
+    def __init__(self, kind, chunkSize=10):
         if kind == 'thread':
             self.pool = ThreadPool(chunkSize)
             self.chunk_size = chunkSize

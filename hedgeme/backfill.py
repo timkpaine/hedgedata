@@ -36,11 +36,14 @@ def whichBackfill(field):
 
 
 def backfillDaily(distributor, symbols, timeframe='5y'):
-    return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
+    return []
 
 
 def backfillMinute(distributor, symbols, _from=six_months()):
-    while _from < last_close():
-        for symbol, data in distributor.distribute(p.chartDF, {'date': _from, 'timeframe': None}, symbols):
-            yield symbol, data
-            _from += timedelta(days=1)
+    if len(symbols) > 0:
+        while _from < last_close():
+            for symbol, data in distributor.distribute(p.chartDF, {'date': _from, 'timeframe': None}, symbols):
+                yield symbol, data
+                _from += timedelta(days=1)

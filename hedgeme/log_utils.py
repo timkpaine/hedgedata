@@ -23,7 +23,7 @@ LOGGING_CONFIG = {
         },
     },
     'loggers': {
-        '': {  # 'root' logger
+        '': {
             'level': 'DEBUG',
             'handlers': ['console']
         },
@@ -32,5 +32,4 @@ LOGGING_CONFIG = {
 
 logging.config.dictConfig(LOGGING_CONFIG)
 log = logging.getLogger('')  # factory method
-
 log.setLevel(logging.CRITICAL)

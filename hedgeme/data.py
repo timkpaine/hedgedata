@@ -1,11 +1,13 @@
 import pyEX as p
 import pandas as pd
+import logging
 from datetime import datetime
 from .utils import never, last_close, this_week, append
 from .distributor import Distributer
-from .log_utils import log
 from .backfill import whichBackfill, backfillDaily, backfillMinute, backfillStats, backfillPeers, backfillNews, backfillFinancials, backfillEarnings, backfillDividends, backfillCompany
 from .fetch import whichFetch, fetchDaily, fetchMinute, fetchStats, fetchPeers, fetchNews, fetchFinancials, fetchEarnings, fetchDividends, fetchCompany
+
+log = logging.getLogger('')
 
 FIELDS = ['DAILY',
           'TICK',
@@ -87,6 +89,7 @@ class Data(object):
 
         # backfill data if necessary
         for field in to_fill:
+            log.critical('Updating %d items' % len(to_fill[field]))
             for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
                 log.critical('Filling %s for %s' % (symbol, field))
 
@@ -100,6 +103,7 @@ class Data(object):
 
         # update data if necessary
         for field in to_update:
+            log.critical('Updating %d items' % len(to_update[field]))
             for symbol, data in whichFetch(field)(self.distributor, to_update[field]):
                 log.critical('Updating %s for %s' % (symbol, field))
 
