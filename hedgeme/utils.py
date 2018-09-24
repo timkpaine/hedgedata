@@ -7,10 +7,18 @@ import requests
 import tornado
 import ujson
 import pandas as pd
+import pyEX as p
+import string
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from functools import lru_cache
 from .log_utils import log
+
+
+_TRANSLATOR = str.maketrans('', '', string.punctuation)
+_OVERRIDES = {
+    'PCLN': 'BKNG'
+}
 
 
 def parse_args(argv):
@@ -68,6 +76,24 @@ def safe_post_cookies(path, *args, **kwargs):
 
 def construct_path(host, method):
     return urljoin(host, method)
+
+
+@lru_cache(1)
+def symbols():
+    return p.symbolsDF().index.values.tolist()
+
+
+@lru_cache(1)
+def symbols_map():
+    ret = {}
+    for x in symbols():
+        ret[x] = x
+        new_x = x.translate(_TRANSLATOR)
+        if new_x not in ret:
+            ret[new_x] = x
+    for k, v in _OVERRIDES.items():
+        ret[k] = v
+    return ret
 
 
 @lru_cache(1)

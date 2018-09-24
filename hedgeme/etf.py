@@ -1,31 +1,7 @@
 import pandas as pd
-import pyEX as p
-import string
 from functools import lru_cache
-from .define import ETF_URL, POPULAR_ETFS_URL
-
-_TRANSLATOR = str.maketrans('', '', string.punctuation)
-_OVERRIDES = {
-    'PCLN': 'BKNG'
-}
-
-
-@lru_cache(1)
-def symbols():
-    return p.symbolsDF().index.values.tolist()
-
-
-@lru_cache(1)
-def symbols_map():
-    ret = {}
-    for x in symbols():
-        ret[x] = x
-        new_x = x.translate(_TRANSLATOR)
-        if new_x not in ret:
-            ret[new_x] = x
-    for k, v in _OVERRIDES.items():
-        ret[k] = v
-    return ret
+from .define import ETF_URL
+from .utils import symbols_map
 
 
 @lru_cache(None)
