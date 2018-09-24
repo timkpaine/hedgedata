@@ -13,7 +13,7 @@ def chunks(l, n):
 
 
 class Distributer(object):
-    def __init__(self, kind, chunkSize=10):
+    def __init__(self, kind, chunkSize=20):
         if kind == 'thread':
             self.pool = ThreadPool(chunkSize)
             self.chunk_size = chunkSize
