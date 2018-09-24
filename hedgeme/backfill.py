@@ -1,5 +1,6 @@
 import pyEX as p
 from datetime import timedelta
+from functools import lru_cache
 from .utils import six_months, last_close
 from .fetch import fetch, \
                    fetchStats as backfillStats, \
@@ -40,9 +41,26 @@ def backfillDaily(distributor, symbols, timeframe='5y'):
     return []
 
 
+@lru_cache(None)
+def _getRange(_from):
+    dates = []
+    while _from < last_close():
+        dates.append(_from)
+        _from += timedelta(days=1)
+    return dates
+
+
 def backfillMinute(distributor, symbols, _from=six_months()):
+    dates = _getRange(_from)
     if len(symbols) > 0:
-        while _from < last_close():
-            for symbol, data in distributor.distribute(p.chartDF, {'date': _from, 'timeframe': None}, symbols):
-                yield symbol, data
-                _from += timedelta(days=1)
+        if len(dates) > len(symbols):
+            # make dates the iterable
+            for symbol in symbols:
+                for date, data in distributor.distribute(p.chartDF, {}, [(symbol, None, date) for date in dates], starmap=True):
+                    print(date, symbol, data)
+                    yield symbol, data
+        else:
+            # make symbols the iterable
+            for date in dates:
+                for symbol, data in distributor.distribute(p.chartDF, {'date': date, 'timeframe': None}, symbols):
+                    yield symbol, data

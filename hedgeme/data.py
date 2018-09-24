@@ -1,13 +1,11 @@
 import pyEX as p
 import pandas as pd
-import logging
 from datetime import datetime
 from .utils import never, last_close, this_week, append
 from .distributor import Distributer
 from .backfill import whichBackfill
 from .fetch import whichFetch
-
-log = logging.getLogger('')
+from .log_utils import log
 
 FIELDS = ['DAILY',
           'TICK',
