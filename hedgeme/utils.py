@@ -164,6 +164,19 @@ def six_months():
 
 
 @lru_cache(1)
+def three_months():
+    '''three_months is three months before today'''
+    today = date.today()
+    six_months = datetime(year=today.year, month=today.month, day=today.day) - relativedelta(months=3)
+
+    if six_months.weekday() == 5:
+        six_months -= timedelta(days=1)
+    elif six_months.weekday() == 6:
+        six_months -= timedelta(days=2)
+    return six_months
+
+
+@lru_cache(1)
 def never():
     '''long long time ago'''
     return datetime(year=1, month=1, day=1)

@@ -87,15 +87,13 @@ class Data(object):
 
         # backfill data if necessary
         for field in to_fill:
-            log.critical('Updating %d items' % len(to_fill[field]))
+            log.critical('Backfilling %d items' % len(to_fill[field]))
             for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
                 log.critical('Filling %s for %s' % (symbol, field))
-
                 data_orig = self.libraries[field].read(symbol).data
 
                 if data_orig.empty:
                     self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-
                 else:
                     self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
 
