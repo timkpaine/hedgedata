@@ -33,6 +33,7 @@ def fetch(distributor, foo, foo_kwargs, symbols):
 def fetchDaily(distributor, symbols, timeframe='1m'):
     if len(symbols) > 0:
         return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
+    return []
 
 
 def fetchMinute(distributor, symbols):
