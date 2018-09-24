@@ -7,9 +7,10 @@ log = logging.getLogger('')
 
 def chunks(l, n):
     '''MISH'''
-    for i in range(0, len(l), n):
-        print('yielding', i, i+n)
-        yield l[i:i + n]
+    if len(l) > 0:
+        for i in range(0, len(l), n):
+            print('yielding', i, i+n)
+            yield l[i:i + n]
 
 
 class Distributer(object):

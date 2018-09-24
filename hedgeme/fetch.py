@@ -25,41 +25,59 @@ def whichFetch(field):
 
 
 def fetch(distributor, foo, foo_kwargs, symbols):
-    for symbol, data in distributor.distribute(foo, {}, symbols):
-        yield symbol, data
+    if len(symbols) > 0:
+        for symbol, data in distributor.distribute(foo, {}, symbols):
+            yield symbol, data
 
 
 def fetchDaily(distributor, symbols, timeframe='1m'):
-    return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
 
 
 def fetchMinute(distributor, symbols):
-    return fetch(distributor, p.chartDF, {'timeframe': '1d'}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.chartDF, {'timeframe': '1d'}, symbols)
+    return []
 
 
 def fetchStats(distributor, symbols):
-    return fetch(distributor, p.stockStatsDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.stockStatsDF, {}, symbols)
+    return []
 
 
 def fetchPeers(distributor, symbols):
-    return fetch(distributor, p.peersDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.peersDF, {}, symbols)
+    return []
 
 
 def fetchNews(distributor, symbols):
-    return fetch(distributor, p.newsDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.newsDF, {}, symbols)
+    return []
 
 
 def fetchFinancials(distributor, symbols):
-    return fetch(distributor, p.financialsDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.financialsDF, {}, symbols)
+    return []
 
 
 def fetchEarnings(distributor, symbols):
-    return fetch(distributor, p.earningsDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.earningsDF, {}, symbols)
+    return []
 
 
 def fetchDividends(distributor, symbols):
-    return fetch(distributor, p.dividendsDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.dividendsDF, {}, symbols)
+    return []
 
 
 def fetchCompany(distributor, symbols):
-    return fetch(distributor, p.companyDF, {}, symbols)
+    if len(symbols) > 0:
+        return fetch(distributor, p.companyDF, {}, symbols)
+    return []
