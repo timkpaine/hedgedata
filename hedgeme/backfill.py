@@ -62,5 +62,4 @@ def backfillMinute(distributor, symbols, _from=three_months()):
             # make symbols the iterable
             for date in dates:
                 for symbol, data in distributor.distribute(p.chartDF, {'date': date, 'timeframe': None}, symbols):
-                    print(date, symbol, data)
                     yield symbol, data
