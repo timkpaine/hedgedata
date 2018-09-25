@@ -1,11 +1,13 @@
 import pyEX as p
 import pandas as pd
 from datetime import datetime
-from .utils import never, last_close, this_week, append
+from .utils import never, last_close, this_week, append, business_days, three_months, yesterday
 from .distributor import Distributer
 from .backfill import whichBackfill
 from .fetch import whichFetch
 from .log_utils import log
+from .validate import SKIP_VALIDATION
+
 
 FIELDS = ['DAILY',
           'TICK',
@@ -34,8 +36,55 @@ class Data(object):
         self.libraries = {}
         self.distributor = Distributer.default()
 
-    def cache(self, symbols=None, delete=False):
-        symbols = symbols or p.symbolsDF()['symbol'].values.tolist()
+    def cache(self, symbols=None, fields=None, delete=False):
+        fields = fields or FIELDS
+        symbols = symbols or p.symbolsDF().index.values.tolist()
+
+        to_delete, to_fill, to_update = self.initialize(symbols, fields)
+
+        if delete:
+            self.delete(to_delete)
+        self.backfill(to_fill)
+        self.update(to_update)
+        self.validate()
+
+    def delete(self, to_delete=None):
+        # delete data no longer needed
+        for field in to_delete:
+            for symbol in to_delete[field]:
+                log.critical('Deleting %s from %s' % (symbol, field))
+                self.libraries[field].delete(symbol)
+
+    def backfill(self, to_fill):
+        # backfill data if necessary
+        for field in to_fill:
+            log.critical('Backfilling %d items' % len(to_fill[field]))
+            for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
+                log.critical('Filling %s for %s' % (symbol, field))
+                data_orig = self.libraries[field].read(symbol).data
+
+                if data_orig.empty:
+                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
+                else:
+                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+
+    def update(self, to_update):
+        # update data if necessary
+        for field in to_update:
+            log.critical('Updating %d items' % len(to_update[field]))
+            for symbol, data in whichFetch(field)(self.distributor, to_update[field]):
+                log.critical('Updating %s for %s' % (symbol, field))
+
+                data_orig = self.libraries[field].read(symbol).data
+                if data_orig.empty:
+                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
+                else:
+                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+
+    def initialize(self, symbols=None, fields=None):
+        '''setup db'''
+        fields = fields or FIELDS
+        symbols = symbols or p.symbolsDF().index.values.tolist()
 
         to_fill = {}
         to_update = {}
@@ -77,34 +126,61 @@ class Data(object):
 
             for symbol in set(all_symbols) - set(symbols):
                     to_delete[field].append(symbol)
+        return to_delete, to_fill, to_update
 
-        # delete data no longer needed
-        if delete:
-            for field in to_delete:
-                for symbol in to_delete[field]:
-                    log.critical('Deleting %s from %s' % (symbol, field))
-                    self.libraries[field].delete(symbol)
+    def validate(self, symbols=None, fields=None):
+        '''look for missing data'''
+        fields = fields or FIELDS
+        symbols = symbols or p.symbolsDF().index.values.tolist()
+        to_refill = {}
+
+        for field in FIELDS:
+            to_refill[field] = []
+
+            if (field, '*') in SKIP_VALIDATION:
+                continue
+
+            dbs = self.db.list_libraries()
+            if field not in dbs:
+                log.critical('VALIDATION FAILED %s' % field)
+                continue
+
+            lib = self.db.get_library(field)
+            all_symbols = lib.list_symbols()
+
+            for symbol in symbols:
+                symbol = symbol.upper()
+                if (field, symbol) in SKIP_VALIDATION or \
+                   ('*', symbol) in SKIP_VALIDATION:
+                    continue
+
+                if symbol not in all_symbols:
+                    to_refill[field].append(symbol)
+                    log.critical('VALIDATION FAILED %s for %s' % (symbol, field))
+                    continue
+
+                data = lib.read('AAPL').data
+                if data.empty:
+                    log.critical('VALIDATION FAILED - DATA EMPTY %s for %s' % (symbol, field))
+                    to_refill[field].append(symbol)
+                    continue
+
+                elif field in ('DAILY', 'TICK'):
+                    dates = business_days(three_months(), yesterday())
+                    for date in dates:
+                        if date.date() not in data.index:
+                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strftime('%Y%m%d')))
+                            to_refill[field].append(symbol)
+                            break
 
         # backfill data if necessary
-        for field in to_fill:
-            log.critical('Backfilling %d items' % len(to_fill[field]))
-            for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
-                log.critical('Filling %s for %s' % (symbol, field))
-                data_orig = self.libraries[field].read(symbol).data
-
-                if data_orig.empty:
-                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-                else:
-                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
-
-        # update data if necessary
-        for field in to_update:
-            log.critical('Updating %d items' % len(to_update[field]))
-            for symbol, data in whichFetch(field)(self.distributor, to_update[field]):
+        for field in to_refill:
+            log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
+            for symbol, data in whichBackfill(field)(self.distributor, to_refill[field]):
                 log.critical('Updating %s for %s' % (symbol, field))
 
-                data_orig = self.libraries[field].read(symbol).data
-                if data_orig.empty:
-                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-                else:
-                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+        #         data_orig = self.libraries[field].read(symbol).data
+        #         if data_orig.empty:
+        #             self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
+        #         else:
+        #             self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})

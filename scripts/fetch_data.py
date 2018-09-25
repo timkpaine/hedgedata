@@ -8,7 +8,7 @@ from hedgeme.data import FIELDS
 from hedgeme.distributor import Distributer
 from hedgeme.log_utils import log
 from hedgeme import symbols as all_symbols
-
+from hedgeme import sp500_constituents
 
 _DISTRIBUTOR = Distributer.default()
 
@@ -71,4 +71,4 @@ def backfillData(symbols, fields, output='cache'):
 
 
 if __name__ == '__main__':
-    backfillData(['AAPL', 'IBM', 'TSLA'], FIELDS)
+    backfillData(sp500_constituents(), FIELDS)

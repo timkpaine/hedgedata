@@ -9,6 +9,7 @@ import ujson
 import pandas as pd
 import pyEX as p
 import string
+from trading_calendars import get_calendar
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 from functools import lru_cache
@@ -185,3 +186,18 @@ def never():
 def append(df1, df2):
     merged = pd.concat([df1, df2])
     return merged[~merged.index.duplicated(keep='first')]
+
+
+@lru_cache(1)
+def holidays():
+    return get_calendar('NYSE').regular_holidays.holidays().to_pydatetime().tolist()
+
+
+@lru_cache(None)
+def business_days(start, end=last_close()):
+    ret = []
+    while start < last_close():
+        if start not in holidays() and start.weekday() != 6 and start.weekday() != 5:
+            ret.append(start)
+        start += timedelta(days=1)
+    return ret
