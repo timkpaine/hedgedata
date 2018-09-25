@@ -2,13 +2,13 @@
 import os
 import os.path
 import pandas as pd
-from hedgeme.fetch import whichFetch
-from hedgeme.backfill import whichBackfill
-from hedgeme.data import FIELDS
-from hedgeme.distributor import Distributer
-from hedgeme.log_utils import log
-from hedgeme import symbols as all_symbols
-from hedgeme import sp500_constituents
+from hedgedata.fetch import whichFetch
+from hedgedata.backfill import whichBackfill
+from hedgedata.data import FIELDS
+from hedgedata.distributor import Distributer
+from hedgedata.log_utils import log
+from hedgedata import symbols as all_symbols
+from hedgedata import sp500_constituents
 
 _DISTRIBUTOR = Distributer.default()
 
