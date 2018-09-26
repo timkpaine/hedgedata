@@ -30,55 +30,55 @@ def fetch(distributor, foo, foo_kwargs, symbols):
             yield symbol, data
 
 
-def fetchDaily(distributor, symbols, timeframe='1m'):
+def fetchDaily(distributor, symbols, timeframe='1m', **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
     return []
 
 
-def fetchMinute(distributor, symbols):
+def fetchMinute(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.chartDF, {'timeframe': '1d'}, symbols)
     return []
 
 
-def fetchStats(distributor, symbols):
+def fetchStats(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.stockStatsDF, {}, symbols)
     return []
 
 
-def fetchPeers(distributor, symbols):
+def fetchPeers(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.peersDF, {}, symbols)
     return []
 
 
-def fetchNews(distributor, symbols):
+def fetchNews(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.newsDF, {}, symbols)
     return []
 
 
-def fetchFinancials(distributor, symbols):
+def fetchFinancials(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.financialsDF, {}, symbols)
     return []
 
 
-def fetchEarnings(distributor, symbols):
+def fetchEarnings(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.earningsDF, {}, symbols)
     return []
 
 
-def fetchDividends(distributor, symbols):
+def fetchDividends(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.dividendsDF, {}, symbols)
     return []
 
 
-def fetchCompany(distributor, symbols):
+def fetchCompany(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.companyDF, {}, symbols)
     return []

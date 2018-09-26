@@ -1,7 +1,7 @@
 import pyEX as p
 from datetime import timedelta
 from functools import lru_cache
-from .utils import three_months, last_close
+from .utils import last_month, last_close
 from .fetch import fetch, \
                    fetchStats as backfillStats, \
                    fetchPeers as backfillPeers, \
@@ -35,7 +35,7 @@ def whichBackfill(field):
         raise NotImplemented
 
 
-def backfillDaily(distributor, symbols, timeframe='5y'):
+def backfillDaily(distributor, symbols, timeframe='5y', **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
     return []
@@ -50,7 +50,7 @@ def _getRange(_from):
     return dates
 
 
-def backfillMinute(distributor, symbols, _from=three_months()):
+def backfillMinute(distributor, symbols, _from=last_month(), **kwargs):
     dates = _getRange(_from)
     if len(symbols) > 0:
         if len(dates) > len(symbols):

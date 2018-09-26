@@ -1,7 +1,7 @@
 import pyEX as p
 import pandas as pd
 from datetime import datetime
-from .utils import never, last_close, this_week, append, business_days, three_months, yesterday
+from .utils import never, last_close, this_week, append, business_days, last_month, yesterday
 from .distributor import Distributer
 from .backfill import whichBackfill
 from .fetch import whichFetch
@@ -103,6 +103,9 @@ class Data(object):
             if field not in dbs:
                 log.critical('Initializing %s' % field)
                 self.db.initialize_library(field)
+                if field in ('TICK',):
+                    # set 20GB quota
+                    self.db.set_quota(field, 21474836480)
 
             self.libraries[field] = self.db.get_library(field)
             library = self.libraries[field]
@@ -133,6 +136,8 @@ class Data(object):
         fields = fields or FIELDS
         symbols = symbols or p.symbolsDF().index.values.tolist()
         to_refill = {}
+        tick_start_date = None
+        self.initialize(symbols, fields)
 
         for field in FIELDS:
             to_refill[field] = []
@@ -166,21 +171,25 @@ class Data(object):
                     continue
 
                 elif field in ('DAILY', 'TICK'):
-                    dates = business_days(three_months(), yesterday())
+                    dates = business_days(last_month(), yesterday())
                     for date in dates:
                         if date.date() not in data.index:
                             log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strftime('%Y%m%d')))
                             to_refill[field].append(symbol)
+                            tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
                             break
 
         # backfill data if necessary
         for field in to_refill:
             log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
-            for symbol, data in whichBackfill(field)(self.distributor, to_refill[field]):
-                log.critical('Updating %s for %s' % (symbol, field))
+            for symbol, data in whichBackfill(field)(self.distributor, to_refill[field], from_=tick_start_date):
+                if field in ('TICK',):
+                    log.critical('Updating %s for %s : %s' % (symbol, field, tick_start_date.strftime('%Y%m%d')))
+                else:
+                    log.critical('Updating %s for %s' % (symbol, field))
 
-        #         data_orig = self.libraries[field].read(symbol).data
-        #         if data_orig.empty:
-        #             self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-        #         else:
-        #             self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+                data_orig = self.libraries[field].read(symbol).data
+                if data_orig.empty:
+                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
+                else:
+                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
