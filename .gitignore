@@ -105,3 +105,6 @@ venv.bak/
 
 
 db
+
+# in cache
+*.csv
