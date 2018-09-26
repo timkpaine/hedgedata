@@ -164,7 +164,7 @@ class Data(object):
                     log.critical('VALIDATION FAILED %s for %s' % (symbol, field))
                     continue
 
-                data = lib.read('AAPL').data
+                data = lib.read(symbol).data
                 if data.empty:
                     log.critical('VALIDATION FAILED - DATA EMPTY %s for %s' % (symbol, field))
                     to_refill[field].append(symbol)
