@@ -136,10 +136,10 @@ class Data(object):
         fields = fields or FIELDS
         symbols = symbols or p.symbolsDF().index.values.tolist()
         to_refill = {}
-        tick_start_date = None
         self.initialize(symbols, fields)
 
         for field in FIELDS:
+            tick_start_date = None
             to_refill[field] = []
 
             if (field, '*') in SKIP_VALIDATION:
@@ -170,11 +170,20 @@ class Data(object):
                     to_refill[field].append(symbol)
                     continue
 
-                elif field in ('DAILY', 'TICK'):
+                elif field in ('TICK'):
                     dates = business_days(last_month(), yesterday())
                     for date in dates:
                         if date.date() not in data.index:
-                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strftime('%Y%m%d')))
+                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strptime('%Y%m%d')))
+                            to_refill[field].append(symbol)
+                            tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
+                            break
+
+                elif field in ('Daily'):
+                    dates = business_days(last_month(), yesterday())
+                    for date in dates:
+                        if date.date() not in data.index:
+                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strptime('%Y%m%d')))
                             to_refill[field].append(symbol)
                             tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
                             break
@@ -182,9 +191,10 @@ class Data(object):
         # backfill data if necessary
         for field in to_refill:
             log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
+
             for symbol, data in whichBackfill(field)(self.distributor, to_refill[field], from_=tick_start_date):
                 if field in ('TICK',):
-                    log.critical('Updating %s for %s : %s' % (symbol, field, tick_start_date.strftime('%Y%m%d')))
+                    log.critical('Updating %s for %s : %s' % (symbol, field, tick_start_date.strptime('%Y%m%d')))
                 else:
                     log.critical('Updating %s for %s' % (symbol, field))
 

@@ -11,7 +11,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     requires = f.read().split()
 
 setup(
-    name='hedgeme.cache',
+    name='hedgedata',
     version='0.0.1',
     description='Financial Analytics',
     long_description=long_description,

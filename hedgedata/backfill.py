@@ -37,7 +37,7 @@ def whichBackfill(field):
 
 def backfillDaily(distributor, symbols, timeframe='5y', **kwargs):
     if len(symbols) > 0:
-        return fetch(distributor, p.chartDF, {'timeframe': timeframe}, symbols)
+        return fetch(distributor, p.chartDF, {'timeframe': '5y'}, symbols)
     return []
 
 
@@ -56,10 +56,10 @@ def backfillMinute(distributor, symbols, _from=last_month(), **kwargs):
         if len(dates) > len(symbols):
             # make dates the iterable
             for symbol in symbols:
-                for date, data in distributor.distribute(p.chartDF, {}, [(symbol, None, date) for date in dates], starmap=True):
+                for date, data in distributor.distribute(p.chartDF, {}, [(symbol, '1d', date) for date in dates], starmap=True):
                     yield symbol, data
         else:
             # make symbols the iterable
             for date in dates:
-                for symbol, data in distributor.distribute(p.chartDF, {'date': date, 'timeframe': None}, symbols):
+                for symbol, data in distributor.distribute(p.chartDF, {'date': date, 'timeframe': '1d'}, symbols):
                     yield symbol, data

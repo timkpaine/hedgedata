@@ -26,7 +26,7 @@ def whichFetch(field):
 
 def fetch(distributor, foo, foo_kwargs, symbols):
     if len(symbols) > 0:
-        for symbol, data in distributor.distribute(foo, {}, symbols):
+        for symbol, data in distributor.distribute(foo, foo_kwargs or {}, symbols):
             yield symbol, data
 
 
