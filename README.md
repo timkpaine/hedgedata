@@ -18,3 +18,5 @@ If you redistribute our API data:
 - Provide a link to https://iextrading.com/api-exhibit-a in your terms of service.
 - Additionally, if you display our TOPS price data, cite “IEX Real-Time Price” near the price.
 
+
+![](https://raw.githubusercontent.com/timkpaine/hedgedata/master/arch.png)
