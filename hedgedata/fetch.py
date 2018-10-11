@@ -1,4 +1,8 @@
 import pyEX as p
+import pandas as pd
+import requests
+from urllib.error import HTTPError
+from .define import POPULAR_ETFS_URL, ETF_URL
 
 
 def whichFetch(field):
@@ -82,3 +86,26 @@ def fetchCompany(distributor, symbols, **kwargs):
     if len(symbols) > 0:
         return fetch(distributor, p.companyDF, {}, symbols)
     return []
+
+
+def _fetchComposition(symbol):
+    try:
+        comp = pd.read_html(ETF_URL % symbol, attrs={'id': 'etfs-that-own'})[0]
+        comp['% of Total'] = comp['% of Total'].str.rstrip('%').astype(float) / 100.0
+        comp.columns = ['Symbol', 'Name', 'Percent']
+        comp = comp[['Symbol', 'Percent', 'Name']]
+        return comp
+
+    except (IndexError, requests.HTTPError, ValueError, HTTPError):
+        return pd.DataFrame()
+
+
+def fetchComposition(distributor, symbols, **kwargs):
+    if len(symbols) > 0:
+        for symbol, data in distributor.distribute(_fetchComposition, foo_kwargs or {}, symbols):
+            yield symbol, data
+    return []
+
+
+def fetchPopularEtfs(**kwargs):
+    return pd.read_html(POPULAR_ETFS_URL)[0]

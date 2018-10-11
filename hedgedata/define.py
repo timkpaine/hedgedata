@@ -1,18 +1,33 @@
-FIELDS = (
-    'financials',
-    'chart',
-    'company',
-    'quote',
-    'dividends',
-    'earnings',
-    'news',
-    'peers',
-    'stats',
-    'composition'
+
+CACHE_FIELDS = (
+    'DAILY',
+    'TICK',
+    'STATS',
+    'PEERS',
+    'NEWS',
+    'FINANCIALS',
+    'EARNINGS',
+    'DIVIDENDS',
+    'COMPANY'
 )
 
+ALL_FIELDS = (
+    'QUOTE',
+    'COMPOSITION',
+    'DAILY',
+    'TICK',
+    'STATS',
+    'PEERS',
+    'NEWS',
+    'FINANCIALS',
+    'EARNINGS',
+    'DIVIDENDS',
+    'COMPANY'
+)
+
+
 OTHERS = (
-    'popularEtfs'
+    'POPULARETFS'
 )
 
 

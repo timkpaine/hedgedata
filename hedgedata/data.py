@@ -4,21 +4,10 @@ from datetime import datetime
 from .utils import never, last_close, this_week, append, business_days, last_month, yesterday
 from .distributor import Distributer
 from .backfill import whichBackfill
-from .fetch import whichFetch
+from .fetch import whichFetch, _fetchComposition
 from .log_utils import log
 from .validate import SKIP_VALIDATION
-
-
-FIELDS = ['DAILY',
-          'TICK',
-          'STATS',
-          # 'QUOTE',
-          'PEERS',
-          'NEWS',
-          'FINANCIALS',
-          'EARNINGS',
-          'DIVIDENDS',
-          'COMPANY']
+from .define import CACHE_FIELDS as FIELDS
 
 
 def updateTime(field):
@@ -35,6 +24,16 @@ class Data(object):
         self.db = db
         self.libraries = {}
         self.distributor = Distributer.default()
+
+        for field in FIELDS:
+            dbs = self.db.list_libraries()
+            if field not in dbs:
+                log.critical('Initializing %s' % field)
+                self.db.initialize_library(field)
+                if field in ('TICK',):
+                    # set 20GB quota
+                    self.db.set_quota(field, 21474836480)
+            self.libraries[field] = self.db.get_library(field)
 
     def cache(self, symbols=None, fields=None, delete=False):
         fields = fields or FIELDS
@@ -99,15 +98,6 @@ class Data(object):
             if field not in to_delete:
                 to_delete[field] = []
 
-            dbs = self.db.list_libraries()
-            if field not in dbs:
-                log.critical('Initializing %s' % field)
-                self.db.initialize_library(field)
-                if field in ('TICK',):
-                    # set 20GB quota
-                    self.db.set_quota(field, 21474836480)
-
-            self.libraries[field] = self.db.get_library(field)
             library = self.libraries[field]
             all_symbols = library.list_symbols()
 
@@ -203,3 +193,53 @@ class Data(object):
                     self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
                 else:
                     self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+
+    def read(self, symbol, field, fetch=True, fill=False):
+        field = field.upper()
+        symbol = symbol.upper()
+
+        if field in ('QUOTE'):
+            # dont cache, instantaneous
+            return p.quoteDF(symbol)
+
+        if field not in self.libraries:
+            return pd.DataFrame()
+
+        l = self.libraries[field]
+
+        if not l.has_symbol(symbol):
+            return pd.DataFrame()
+
+        df = l.read(symbol).data
+        metadata = l.read_metadata(symbol).metadata
+
+        if fetch:
+            if df.empty or not metadata or not metadata.get('timestamp') or \
+               metadata.get('timestamp', never()) <= never() or \
+               metadata.get('timestamp', never()) < updateTime(field):
+
+                if field == 'FINANCIALS':
+                    df = p.financialsDF(symbol)
+                elif field == 'DAILY':
+                    df = p.chartDF(symbol, '5y')
+                elif field == 'COMPANY':
+                    df = p.companyDF(symbol)
+                elif field == 'EARNINGS':
+                    df = p.earningsDF(symbol)
+                elif field == 'DIVIDENDS':
+                    df = p.dividendsDF(symbol)
+                elif field == 'NEWS':
+                    df = p.newsDF(symbol)
+                elif field == 'STATS':
+                    df = p.stockStatsDF(symbol)
+
+                elif field == 'COMPOSITION':
+                    df = _fetchComposition(symbol)
+
+                elif field == 'PEERS':
+                    df = p.peersDF(symbol)
+
+                if fill:
+                    l.write(symbol, df, metadata={'timestamp': datetime.now()})
+
+        return df
