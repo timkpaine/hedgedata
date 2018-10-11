@@ -15,6 +15,9 @@ build:  ## build the repository
 install:  ## install to site-packages
 	python3 setup.py install
 
+dist:  ## dist to pypi
+	python3 setup.py sdist upload -r pypi
+
 # Thanks to Francoise at marmelab.com for this
 .DEFAULT_GOAL := help
 help:
@@ -23,4 +26,4 @@ help:
 print-%:
 	@echo '$*=$($*)'
 
-.PHONY: clean run test tests help annotate annotate_l docs run build js
+.PHONY: clean run test tests help annotate annotate_l docs run build js dist

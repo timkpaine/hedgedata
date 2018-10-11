@@ -164,7 +164,7 @@ class Data(object):
                     dates = business_days(last_month(), yesterday())
                     for date in dates:
                         if date.date() not in data.index:
-                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strptime('%Y%m%d')))
+                            log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strftime('%Y%m%d')))
                             to_refill[field].append(symbol)
                             tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
                             break
