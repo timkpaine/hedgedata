@@ -152,10 +152,15 @@ class Data(object):
                 symbol = symbol.upper()
 
                 # if fail count too high, autofail all for speed
-                if fail_count > .1 * len(all_symbols):
+                if fail_count > .2 * len(all_symbols):
                     if not print_fail:
                         log.critical('VALIDATION THRESHOLD REACHED for %s' % field)
                         print_fail = True
+
+                    if (field, symbol) in SKIP_VALIDATION or \
+                       ('*', symbol) in SKIP_VALIDATION:
+                        continue
+
                     to_refill[field].append(symbol)
                     if field == 'DAILY':
                         daily_start_date = dates[0]
@@ -201,7 +206,12 @@ class Data(object):
 
         # backfill data if necessary
         for field in to_refill:
-            log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
+            if field == 'TICK':
+                log.critical('Backfilling %d items for %s - %s' % (len(to_refill[field]), field, str(tick_start_date)))
+            elif field == 'DAILY':
+                log.critical('Backfilling %d items for %s - %s' % (len(to_refill[field]), field, str(daily_start_date)))
+            else:
+                log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
 
             for symbol, data in whichBackfill(field)(self.distributor, to_refill[field], from_=tick_start_date):
                 log.critical('Updating %s for %s' % (symbol, field))

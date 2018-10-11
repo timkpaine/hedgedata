@@ -1,5 +1,6 @@
 import pyEX
 from arctic import Arctic
+from functools import lru_cache
 from .data import Data
 from .define import ALL_FIELDS
 from .transform import whichTransform
@@ -36,5 +37,6 @@ class Cache(object):
 
         return self.data.read(symbol, field)
 
+    @lru_cache(1)
     def tickers(self):
         return pyEX.symbolsDF()
