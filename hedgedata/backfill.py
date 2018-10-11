@@ -55,4 +55,4 @@ def backfillMinute(distributor, symbols, _from=last_month(), **kwargs):
     if len(symbols) > 0:
         # make dates the iterable
         for symbol in symbols:
-            yield symbol, p.batchMinuteBarsDF(symbol, dates)
+            yield symbol, p.bulkMinuteBarsDF(symbol, dates)
