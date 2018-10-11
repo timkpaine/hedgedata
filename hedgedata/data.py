@@ -1,7 +1,7 @@
 import pyEX as p
 import pandas as pd
 from datetime import datetime
-from .utils import never, last_close, this_week, append, business_days, last_month, yesterday
+from .utils import never, last_close, this_week, append, business_days, last_month, yesterday, today
 from .distributor import Distributer
 from .backfill import whichBackfill
 from .fetch import whichFetch, _fetchComposition
@@ -58,6 +58,7 @@ class Data(object):
         # backfill data if necessary
         for field in to_fill:
             log.critical('Backfilling %d items' % len(to_fill[field]))
+
             for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
                 log.critical('Filling %s for %s' % (symbol, field))
                 data_orig = self.libraries[field].read(symbol).data
@@ -129,7 +130,11 @@ class Data(object):
         self.initialize(symbols, fields)
 
         for field in FIELDS:
-            tick_start_date = None
+            tick_start_date = today()
+            daily_start_date = today()
+            fail_count = 0
+            print_fail = False
+            dates = business_days(last_month(), yesterday())
             to_refill[field] = []
 
             if (field, '*') in SKIP_VALIDATION:
@@ -145,6 +150,19 @@ class Data(object):
 
             for symbol in symbols:
                 symbol = symbol.upper()
+
+                # if fail count too high, autofail all for speed
+                if fail_count > .1 * len(all_symbols):
+                    if not print_fail:
+                        log.critical('VALIDATION THRESHOLD REACHED for %s' % field)
+                        print_fail = True
+                    to_refill[field].append(symbol)
+                    if field == 'DAILY':
+                        daily_start_date = dates[0]
+                    if field == 'TICK':
+                        tick_start_date = dates[0]
+                    continue
+
                 if (field, symbol) in SKIP_VALIDATION or \
                    ('*', symbol) in SKIP_VALIDATION:
                     continue
@@ -152,30 +170,33 @@ class Data(object):
                 if symbol not in all_symbols:
                     to_refill[field].append(symbol)
                     log.critical('VALIDATION FAILED %s for %s' % (symbol, field))
+                    fail_count += 1
                     continue
 
                 data = lib.read(symbol).data
+
                 if data.empty:
                     log.critical('VALIDATION FAILED - DATA EMPTY %s for %s' % (symbol, field))
                     to_refill[field].append(symbol)
+                    fail_count += 1
                     continue
 
                 elif field in ('TICK'):
-                    dates = business_days(last_month(), yesterday())
                     for date in dates:
-                        if date.date() not in data.index:
+                        if date not in data.index:
                             log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strftime('%Y%m%d')))
                             to_refill[field].append(symbol)
-                            tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
+                            tick_start_date = min(tick_start_date, date) if tick_start_date is not None else date
+                            fail_count += 1
                             break
 
                 elif field in ('Daily'):
-                    dates = business_days(last_month(), yesterday())
                     for date in dates:
-                        if date.date() not in data.index:
+                        if date not in data.index:
                             log.critical('VALIDATION FAILED - DATA MISSING %s for %s : %s' % (symbol, field, date.strptime('%Y%m%d')))
                             to_refill[field].append(symbol)
-                            tick_start_date = min(tick_start_date, date.date()) if tick_start_date is not None else date.date()
+                            daily_start_date = min(daily_start_date, date) if daily_start_date is not None else date
+                            fail_count += 1
                             break
 
         # backfill data if necessary
@@ -183,10 +204,7 @@ class Data(object):
             log.critical('Backfilling %d items for %s' % (len(to_refill[field]), field))
 
             for symbol, data in whichBackfill(field)(self.distributor, to_refill[field], from_=tick_start_date):
-                if field in ('TICK',):
-                    log.critical('Updating %s for %s : %s' % (symbol, field, tick_start_date.strptime('%Y%m%d')))
-                else:
-                    log.critical('Updating %s for %s' % (symbol, field))
+                log.critical('Updating %s for %s' % (symbol, field))
 
                 data_orig = self.libraries[field].read(symbol).data
                 if data_orig.empty:

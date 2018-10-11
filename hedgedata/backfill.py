@@ -2,7 +2,7 @@ import pyEX as p
 from datetime import timedelta
 from functools import lru_cache
 from .utils import last_month, last_close
-from .fetch import fetch, \
+from .fetch import _fetch as fetch, \
                    fetchStats as backfillStats, \
                    fetchPeers as backfillPeers, \
                    fetchNews as backfillNews, \
@@ -53,13 +53,6 @@ def _getRange(_from):
 def backfillMinute(distributor, symbols, _from=last_month(), **kwargs):
     dates = _getRange(_from)
     if len(symbols) > 0:
-        if len(dates) > len(symbols):
-            # make dates the iterable
-            for symbol in symbols:
-                for date, data in distributor.distribute(p.chartDF, {}, [(symbol, '1d', date) for date in dates], starmap=True):
-                    yield symbol, data
-        else:
-            # make symbols the iterable
-            for date in dates:
-                for symbol, data in distributor.distribute(p.chartDF, {'date': date, 'timeframe': '1d'}, symbols):
-                    yield symbol, data
+        # make dates the iterable
+        for symbol in symbols:
+            yield symbol, p.batchMinuteBarsDF(symbol, dates)
