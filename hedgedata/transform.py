@@ -105,7 +105,7 @@ def transformNews(df, symbol, data):
 def transformPeers(df, symbol, data):
     if df is not None and not df.empty:
         df = df.replace({np.nan: None})
-        infos = pd.concat([data.read(symbol, 'COMPANY') for item in df.index.values])
+        infos = pd.concat([data.read(item, 'COMPANY') for item in df.index.values])
     else:
         infos = pd.DataFrame()
     return infos.replace({np.nan: None}).to_dict(orient='records')
