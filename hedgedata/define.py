@@ -1,28 +1,33 @@
 
-CACHE_FIELDS = (
+MARKET_DATA_FIELDS = (
     'DAILY',
     'TICK',
+)
+
+CACHE_FIELDS = (
     'STATS',
     'PEERS',
     'NEWS',
     'FINANCIALS',
     'EARNINGS',
     'DIVIDENDS',
-    'COMPANY'
+    'COMPANY',
+    'DAILY',
+    'TICK',
 )
 
 ALL_FIELDS = (
     'QUOTE',
     'COMPOSITION',
-    'DAILY',
-    'TICK',
     'STATS',
     'PEERS',
     'NEWS',
     'FINANCIALS',
     'EARNINGS',
     'DIVIDENDS',
-    'COMPANY'
+    'COMPANY',
+    'DAILY',
+    'TICK',
 )
 
 

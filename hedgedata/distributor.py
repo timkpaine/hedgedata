@@ -14,13 +14,15 @@ def chunks(l, n):
 
 class Distributer(object):
     def __init__(self, kind, chunkSize=20):
-        if kind == 'thread':
-            self.pool = ThreadPool(chunkSize)
-            self.chunk_size = chunkSize
+        self.kind = kind
+        self.chunk_size = chunkSize
+
+    def distribute(self, function, function_kwargs, iterable, starmap=False, skip_if_error=True, max_attempts=3):
+        if self.kind == 'thread':
+            self.pool = ThreadPool(self.chunk_size)
         else:
             raise NotImplemented
 
-    def distribute(self, function, function_kwargs, iterable, starmap=False, skip_if_error=True, max_attempts=3):
         if isinstance(self.pool, ThreadPool):
             for chunk in chunks(iterable, self.chunk_size):
                 attempts = 0
@@ -66,6 +68,11 @@ class Distributer(object):
 
         else:
             raise NotImplemented
+
+        self.pool.stop()
+
+    def stop(self):
+        self.pool.stop()
 
     @staticmethod
     def default():

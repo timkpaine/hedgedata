@@ -1,39 +1,53 @@
 import pyEX as p
 import pandas as pd
 from datetime import datetime
-from .utils import never, last_close, this_week, append, business_days, last_month, yesterday, today
+import arctic
+from arctic import Arctic
+from pymongo.errors import ServerSelectionTimeoutError
+from .utils import never, business_days, last_month, yesterday, today
+from .data_utils import _getLib, _appendIfNecessary, _updateTime, _skip
 from .distributor import Distributer
 from .backfill import whichBackfill
-from .fetch import whichFetch, _fetchComposition
-from .log_utils import log
-from .validate import SKIP_VALIDATION
+from .fetch import whichFetch, refetch
+from .log_utils import log, logit
 from .define import CACHE_FIELDS as FIELDS
 
 
-def updateTime(field):
-    if field in ('DAILY', 'TICK', 'NEWS'):
-        return last_close()
-    elif field in ('COMPANY', 'DIVIDENDS', 'EARNINGS', 'FINANCIALS', 'PEERS', 'STATS'):
-        return this_week()
-    elif field in ('QUOTE',):
-        return never()
+class OfflineLib(object):
+    def has_symbol(self, symbol):
+        return False
+
+
+class OfflineDB(object):
+    def list_libraries(self):
+        return FIELDS
+
+    def initialize_library(self, name):
+        return OfflineLib()
+
+    def get_library(self, name):
+        return OfflineLib()
 
 
 class Data(object):
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, dbname, offline=False):
         self.libraries = {}
         self.distributor = Distributer.default()
 
+        if offline:
+            self.db = OfflineDB()
+            log.critical('WARNING Running in offline mode')
+            return
+
+        self.db = Arctic(dbname)
+
+        # initialize databases
         for field in FIELDS:
-            dbs = self.db.list_libraries()
-            if field not in dbs:
-                log.critical('Initializing %s' % field)
-                self.db.initialize_library(field)
-                if field in ('TICK',):
-                    # set 20GB quota
-                    self.db.set_quota(field, 21474836480)
-            self.libraries[field] = self.db.get_library(field)
+            try:
+                self.libraries[field] = _getLib(self.db, field)
+            except (arctic.exceptions.LibraryNotFoundException, ServerSelectionTimeoutError):
+                log.critical('Arctic not available, is mongo offline??')
+                raise
 
     def cache(self, symbols=None, fields=None, delete=False):
         fields = fields or FIELDS
@@ -42,7 +56,9 @@ class Data(object):
         to_delete, to_fill, to_update = self.initialize(symbols, fields)
 
         if delete:
+            # prune data
             self.delete(to_delete)
+
         self.backfill(to_fill)
         self.update(to_update)
         self.validate()
@@ -58,28 +74,23 @@ class Data(object):
         # backfill data if necessary
         for field in to_fill:
             log.critical('Backfilling %d items' % len(to_fill[field]))
+            lib = self.libraries[field]
 
             for symbol, data in whichBackfill(field)(self.distributor, to_fill[field]):
                 log.critical('Filling %s for %s' % (symbol, field))
-                data_orig = self.libraries[field].read(symbol).data
-
-                if data_orig.empty:
-                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-                else:
-                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+                data_orig = lib.read(symbol).data
+                _appendIfNecessary(lib, symbol, data_orig, data)
 
     def update(self, to_update):
         # update data if necessary
         for field in to_update:
             log.critical('Updating %d items' % len(to_update[field]))
+            lib = self.libraries[field]
+
             for symbol, data in whichFetch(field)(self.distributor, to_update[field]):
                 log.critical('Updating %s for %s' % (symbol, field))
-
                 data_orig = self.libraries[field].read(symbol).data
-                if data_orig.empty:
-                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-                else:
-                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+                _appendIfNecessary(lib, symbol, data_orig, data)
 
     def initialize(self, symbols=None, fields=None):
         '''setup db'''
@@ -89,6 +100,8 @@ class Data(object):
         to_fill = {}
         to_update = {}
         to_delete = {}
+
+        _empty = pd.DataFrame()
 
         # initialize database and collect what to update
         for field in FIELDS:
@@ -107,7 +120,7 @@ class Data(object):
                 if symbol not in all_symbols:
                     log.critical('Initializing %s for %s' % (symbol, field))
                     to_fill[field].append(symbol)
-                    library.write(symbol.upper(), pd.DataFrame(), metadata={'timestamp': never()})
+                    library.write(symbol, _empty, metadata={'timestamp': never()})
 
                 else:
                     metadata = library.read_metadata(symbol.upper()).metadata
@@ -115,7 +128,7 @@ class Data(object):
                         to_fill[field].append(symbol)
                     elif metadata.get('timestamp', never()) <= never():
                         to_fill[field].append(symbol)
-                    elif metadata.get('timestamp', never()) < updateTime(field):
+                    elif metadata.get('timestamp', never()) < _updateTime(field):
                         to_update[field].append(symbol)
 
             for symbol in set(all_symbols) - set(symbols):
@@ -137,7 +150,7 @@ class Data(object):
             dates = business_days(last_month(), yesterday())
             to_refill[field] = []
 
-            if (field, '*') in SKIP_VALIDATION:
+            if _skip(field):
                 continue
 
             dbs = self.db.list_libraries()
@@ -157,8 +170,7 @@ class Data(object):
                         log.critical('VALIDATION THRESHOLD REACHED for %s' % field)
                         print_fail = True
 
-                    if (field, symbol) in SKIP_VALIDATION or \
-                       ('*', symbol) in SKIP_VALIDATION:
+                    if _skip(field, symbol):
                         continue
 
                     to_refill[field].append(symbol)
@@ -168,8 +180,7 @@ class Data(object):
                         tick_start_date = dates[0]
                     continue
 
-                if (field, symbol) in SKIP_VALIDATION or \
-                   ('*', symbol) in SKIP_VALIDATION:
+                if _skip(field, symbol):
                     continue
 
                 if symbol not in all_symbols:
@@ -206,6 +217,8 @@ class Data(object):
 
         # backfill data if necessary
         for field in to_refill:
+            lib = self.libraries[field]
+
             if field == 'TICK':
                 log.critical('Backfilling %d items for %s - %s' % (len(to_refill[field]), field, str(tick_start_date)))
             elif field == 'DAILY':
@@ -216,11 +229,8 @@ class Data(object):
             for symbol, data in whichBackfill(field)(self.distributor, to_refill[field], from_=tick_start_date):
                 log.critical('Updating %s for %s' % (symbol, field))
 
-                data_orig = self.libraries[field].read(symbol).data
-                if data_orig.empty:
-                    self.libraries[field].write(symbol, data, metadata={'timestamp': datetime.now()})
-                else:
-                    self.libraries[field].write(symbol, append(data_orig, data), metadata={'timestamp': datetime.now()})
+                data_orig = lib.read(symbol).data
+                _appendIfNecessary(lib, symbol, data_orig, data)
 
     def read(self, symbol, field, fetch=True, fill=False):
         field = field.upper()
@@ -229,45 +239,28 @@ class Data(object):
         if field in ('QUOTE'):
             # dont cache, instantaneous
             return p.quoteDF(symbol)
+        elif field in ('COMPOSITION'):
+            return refetch(field, symbol)
 
-        if field not in self.libraries:
+        if field not in self.libraries and not fetch:
             return pd.DataFrame()
 
-        l = self.libraries[field]
+        l = _getLib(self.db, field)
 
         if not l.has_symbol(symbol):
-            return pd.DataFrame()
-
-        df = l.read(symbol).data
-        metadata = l.read_metadata(symbol).metadata
+            if not fetch:
+                return pd.DataFrame()
+            df = pd.DataFrame()
+        else:
+            df = l.read(symbol).data
+            metadata = l.read_metadata(symbol).metadata
 
         if fetch:
             if df.empty or not metadata or not metadata.get('timestamp') or \
                metadata.get('timestamp', never()) <= never() or \
-               metadata.get('timestamp', never()) < updateTime(field):
+               metadata.get('timestamp', never()) < _updateTime(field):
 
-                if field == 'FINANCIALS':
-                    df = p.financialsDF(symbol)
-                elif field == 'DAILY':
-                    df = p.chartDF(symbol, '5y')
-                elif field == 'COMPANY':
-                    df = p.companyDF(symbol)
-                elif field == 'EARNINGS':
-                    df = p.earningsDF(symbol)
-                elif field == 'DIVIDENDS':
-                    df = p.dividendsDF(symbol)
-                elif field == 'NEWS':
-                    df = p.newsDF(symbol)
-                elif field == 'STATS':
-                    df = p.stockStatsDF(symbol)
-
-                elif field == 'COMPOSITION':
-                    df = _fetchComposition(symbol)
-
-                elif field == 'PEERS':
-                    df = p.peersDF(symbol)
-
+                df = refetch(field, symbol)
                 if fill:
                     l.write(symbol, df, metadata={'timestamp': datetime.now()})
-
         return df

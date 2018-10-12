@@ -9,6 +9,30 @@ def fetch(fields, symbols):
     pass
 
 
+def refetch(field, symbol):
+    if field == 'TICK':
+        return p.chartDF(symbol, '1d')
+    if field == 'FINANCIALS':
+        return p.financialsDF(symbol)
+    elif field == 'DAILY':
+        return p.chartDF(symbol, '5y')
+    elif field == 'COMPANY':
+        return p.companyDF(symbol)
+    elif field == 'EARNINGS':
+        return p.earningsDF(symbol)
+    elif field == 'DIVIDENDS':
+        return p.dividendsDF(symbol)
+    elif field == 'NEWS':
+        return p.newsDF(symbol)
+    elif field == 'STATS':
+        return p.stockStatsDF(symbol)
+    elif field == 'COMPOSITION':
+        return _fetchComposition(symbol)
+    elif field == 'PEERS':
+        return p.peersDF(symbol)
+    raise NotImplementedError('%s - %s' % (field, symbol))
+
+
 def whichFetch(field):
     if field == 'DAILY':
         return fetchDaily
@@ -29,7 +53,7 @@ def whichFetch(field):
     elif field == 'COMPANY':
         return fetchCompany
     else:
-        raise NotImplemented
+        raise NotImplementedError('%s' % field)
 
 
 def _fetch(distributor, foo, foo_kwargs, symbols):

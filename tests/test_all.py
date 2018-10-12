@@ -1,4 +1,4 @@
 # accurate coverage
-from hedgeme.cache import *
+from hedgedata import *
 
 print('nothing to report')

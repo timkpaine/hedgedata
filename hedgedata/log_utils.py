@@ -33,3 +33,9 @@ LOGGING_CONFIG = {
 logging.config.dictConfig(LOGGING_CONFIG)
 log = logging.getLogger('')  # factory method
 log.setLevel(logging.CRITICAL)
+
+
+def logit(iterator, message, indexes=None):
+
+    for val in iterator:
+        yield val

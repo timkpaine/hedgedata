@@ -31,13 +31,11 @@ def whichTransform(field):
         raise NotImplementedError('field: %s' % field)
 
 
-@lru_cache(100)
 def _stripDt(df):
     for col in df.select_dtypes(np.datetime64):
         df[col] = df[col].astype(str)
 
 
-@lru_cache(100)
 def transformDaily(df, symbol, data):
     if df.empty:
         return {}
@@ -47,7 +45,6 @@ def transformDaily(df, symbol, data):
     return df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformMinute(df, symbol, data):
     if df.empty:
         return {}
@@ -57,7 +54,6 @@ def transformMinute(df, symbol, data):
     return df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformFinancials(df, symbol, data):
     if df.empty:
         return {}
@@ -66,7 +62,6 @@ def transformFinancials(df, symbol, data):
     return df[-100:].replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformDividends(df, symbol, data):
     if df.empty:
         return {}
@@ -74,7 +69,6 @@ def transformDividends(df, symbol, data):
     return df.replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformCompany(df, symbol, data):
     if df.empty:
         return {}
@@ -83,7 +77,6 @@ def transformCompany(df, symbol, data):
         ['CEO', 'companyName', 'description', 'sector', 'industry', 'issueType', 'exchange', 'website']].reset_index().replace({np.nan: None}).to_dict(orient='records')[0]
 
 
-@lru_cache(100)
 def transformQuote(df, symbol, data):
     if df.empty:
         return {}
@@ -91,7 +84,6 @@ def transformQuote(df, symbol, data):
     return df.replace({np.nan: None}).to_dict(orient='records')[0]
 
 
-@lru_cache(100)
 def transformEarnings(df, symbol, data):
     if df.empty:
         return {}
@@ -99,7 +91,6 @@ def transformEarnings(df, symbol, data):
     return df.replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformNews(df, symbol, data):
     if df.empty:
         return {}
@@ -113,7 +104,6 @@ def transformNews(df, symbol, data):
         return {}
 
 
-@lru_cache(100)
 def transformPeers(df, symbol, data):
     if df is not None and not df.empty:
         df = df.replace({np.nan: None})
@@ -123,7 +113,6 @@ def transformPeers(df, symbol, data):
     return infos.replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformStats(df, symbol, data):
     if df.empty:
         return {}
@@ -131,7 +120,6 @@ def transformStats(df, symbol, data):
     return df.replace({np.nan: None}).to_dict(orient='records')
 
 
-@lru_cache(100)
 def transformComposition(df, symbol, data):
     if df.empty:
         return {}
