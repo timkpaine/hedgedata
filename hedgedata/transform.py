@@ -42,7 +42,8 @@ def transformDaily(df, symbol, data):
     df = df.reset_index()
     _stripDt(df)
     df['ticker'] = symbol
-    return df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None}).to_dict(orient='records')
+    df = df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformMinute(df, symbol, data):
@@ -51,7 +52,8 @@ def transformMinute(df, symbol, data):
     df = df.reset_index()
     _stripDt(df)
     df['ticker'] = symbol
-    return df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None}).to_dict(orient='records')
+    df = df[['date', 'ticker', 'open', 'high', 'low', 'close']][-100:].replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformFinancials(df, symbol, data):
@@ -59,14 +61,16 @@ def transformFinancials(df, symbol, data):
         return {}
     df = df.reset_index()
     _stripDt(df)
-    return df[-100:].replace({np.nan: None}).to_dict(orient='records')
+    df = df[-100:].replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformDividends(df, symbol, data):
     if df.empty:
         return {}
     _stripDt(df)
-    return df.replace({np.nan: None}).to_dict(orient='records')
+    df = df.replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformCompany(df, symbol, data):
@@ -81,14 +85,16 @@ def transformQuote(df, symbol, data):
     if df.empty:
         return {}
     _stripDt(df)
-    return df.replace({np.nan: None}).to_dict(orient='records')[0]
+    df = df.replace({np.nan: None})
+    return df.to_dict(orient="record")[0]
 
 
 def transformEarnings(df, symbol, data):
     if df.empty:
         return {}
     _stripDt(df)
-    return df.replace({np.nan: None}).to_dict(orient='records')
+    df = df.replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformNews(df, symbol, data):
@@ -99,7 +105,8 @@ def transformNews(df, symbol, data):
     if not df.empty:
         df['headline'] = '<a href="' + df['url'] + '">' + df['headline'] + ' [<strong>' + df['source'] + '</strong>]' + '</a>'
         df['summary'] = '<p>' + df['summary'] + '</p>'
-        return df[['headline', 'summary']].to_dict(orient='records')
+        df = df[['headline', 'summary']]
+        return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
     else:
         return {}
 
@@ -110,18 +117,21 @@ def transformPeers(df, symbol, data):
         infos = pd.concat([data.read(item, 'COMPANY') for item in df.index.values])
     else:
         infos = pd.DataFrame()
-    return infos.replace({np.nan: None}).to_dict(orient='records')
+    df = infos.replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformStats(df, symbol, data):
     if df.empty:
         return {}
     _stripDt(df)
-    return df.replace({np.nan: None}).to_dict(orient='records')
+    df = df.replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
 
 
 def transformComposition(df, symbol, data):
     if df.empty:
         return {}
     _stripDt(df)
-    return df.replace({np.nan: None}).to_dict(orient='records')
+    df = df.replace({np.nan: None})
+    return {k: v.values.tolist() for k, v in df.to_dict(orient="series").items()}
