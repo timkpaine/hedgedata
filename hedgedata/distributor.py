@@ -21,7 +21,7 @@ class Distributer(object):
         if self.kind == 'thread':
             self.pool = ThreadPool(self.chunk_size)
         else:
-            raise NotImplemented
+            raise NotImplementedError()
 
         if isinstance(self.pool, ThreadPool):
             for chunk in chunks(iterable, self.chunk_size):
@@ -67,7 +67,7 @@ class Distributer(object):
                     yield (chunk[i], item)
 
         else:
-            raise NotImplemented
+            raise NotImplementedError()
 
         self.pool.stop()
 

@@ -130,7 +130,7 @@ def _fetchComposition(symbol):
 
 def fetchComposition(distributor, symbols, **kwargs):
     if len(symbols) > 0:
-        for symbol, data in distributor.distribute(_fetchComposition, foo_kwargs or {}, symbols):
+        for symbol, data in distributor.distribute(_fetchComposition, kwargs or {}, symbols):
             yield symbol, data
     return []
 

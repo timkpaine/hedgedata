@@ -4,6 +4,16 @@ tests: clean ## Clean and Make unit tests
 test: clean ## run the tests for travis CI
 	@ python3 -m nose -v tests --with-coverage --cover-erase --cover-package=`find hedgedata -name "*.py" | sed "s=\./==g" | sed "s=/=.=g" | sed "s/\.py//g" | tr '\n' ',' | rev | cut -c2- | rev`
 
+lint: ## run linter
+	pylint hedgedata || echo
+	flake8 hedgedata 
+
+annotate: ## MyPy type annotation check
+	mypy -s hedgedata
+
+annotate_l: ## MyPy type annotation check - count only
+	mypy -s hedgedata | wc -l 
+
 clean: ## clean the repository
 	find . -name "__pycache__" | xargs  rm -rf 
 	find . -name "*.pyc" | xargs rm -rf 

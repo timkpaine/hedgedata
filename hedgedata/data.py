@@ -9,7 +9,7 @@ from .data_utils import _getLib, _appendIfNecessary, _updateTime, _skip
 from .distributor import Distributer
 from .backfill import whichBackfill
 from .fetch import whichFetch, refetch
-from .log_utils import log, logit
+from .log_utils import log
 from .define import CACHE_FIELDS as FIELDS
 
 
@@ -245,15 +245,15 @@ class Data(object):
         if field not in self.libraries and not fetch:
             return pd.DataFrame()
 
-        l = _getLib(self.db, field)
+        lib = _getLib(self.db, field)
 
-        if not l.has_symbol(symbol):
+        if not lib.has_symbol(symbol):
             if not fetch:
                 return pd.DataFrame()
             df = pd.DataFrame()
         else:
-            df = l.read(symbol).data
-            metadata = l.read_metadata(symbol).metadata
+            df = lib.read(symbol).data
+            metadata = lib.read_metadata(symbol).metadata
 
         if fetch:
             if df.empty or not metadata or not metadata.get('timestamp') or \
@@ -262,5 +262,5 @@ class Data(object):
 
                 df = refetch(field, symbol)
                 if fill:
-                    l.write(symbol, df, metadata={'timestamp': datetime.now()})
+                    lib.write(symbol, df, metadata={'timestamp': datetime.now()})
         return df

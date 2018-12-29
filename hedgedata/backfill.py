@@ -32,7 +32,7 @@ def whichBackfill(field):
     elif field == 'COMPANY':
         return backfillCompany
     else:
-        raise NotImplemented
+        raise NotImplementedError()
 
 
 def backfillDaily(distributor, symbols, timeframe='5y', **kwargs):
