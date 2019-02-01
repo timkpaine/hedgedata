@@ -1,33 +1,16 @@
 
+CACHE_TYPES = ('NONE', 'ARCTIC')
+
 MARKET_DATA_FIELDS = (
     'DAILY',
-    'TICK',
 )
 
 CACHE_FIELDS = (
-    'STATS',
-    'PEERS',
-    'NEWS',
-    'FINANCIALS',
-    'EARNINGS',
-    'DIVIDENDS',
-    'COMPANY',
     'DAILY',
-    'TICK',
 )
 
 ALL_FIELDS = (
-    'QUOTE',
-    'COMPOSITION',
-    'STATS',
-    'PEERS',
-    'NEWS',
-    'FINANCIALS',
-    'EARNINGS',
-    'DIVIDENDS',
-    'COMPANY',
     'DAILY',
-    'TICK',
 )
 
 
