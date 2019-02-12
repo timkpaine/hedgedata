@@ -1,16 +1,9 @@
 
 CACHE_TYPES = ('NONE', 'ARCTIC')
 
-MARKET_DATA_FIELDS = (
-    'DAILY',
-)
-
-CACHE_FIELDS = (
-    'DAILY',
-)
-
 ALL_FIELDS = (
     'DAILY',
+    'CASHFLOW'
 )
 
 

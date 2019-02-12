@@ -1,5 +1,5 @@
 import pandas as pd
-from .define import MARKET_DATA_FIELDS
+from .define import ALL_FIELDS
 from .utils import last_year
 import pyEX
 
@@ -7,16 +7,23 @@ import pyEX
 class Cache(object):
     def __init__(self, cache_type='NONE'):
         self._cache_type = cache_type.upper()
-        self._cache = {k: pd.DataFrame() for k in MARKET_DATA_FIELDS}
+        self._cache = {k: pd.DataFrame() for k in ALL_FIELDS}
         self._client = pyEX.Client()
 
     def daily(self,
               symbols,
-              from_=pd.Timestamp(last_year()),
-              count=0):
-        dat = self._cache['DAILY']
+              from_=pd.Timestamp(last_year())):
+        return self._get(symbols, 'DAILY', ['date', 'symbol'], from_, 0, True)
+
+    def _get(self,
+             symbols,
+             cachename,
+             index_fields,
+             from_=None,
+             count=0,
+             dict_=False):
+        dat = self._cache[cachename]
         symbols = [_.upper() for _ in symbols]
-        index_fields = ['date', 'symbol']
 
         # drop existing index
         dat.reset_index(inplace=True)
@@ -32,23 +39,37 @@ class Cache(object):
         if from_ and not dat.empty:
             fetch = fetch.union(set(symbols) if not (dat['date'] == from_).any() else
                                 set(symbols) - set(dat[dat['date'] == from_]['symbol'].unique()))
-        elif count:
-            raise NotImplementedError()
+        elif count and not dat.empty:
+            counts = dat['symbol'].value_counts() < count
+            fetch = fetch.union(set(dat[dat['symbol'].isin(counts[counts])]['symbol'].unique()))
 
         # fetch new data
-        df_dict = self.fetch(list(fetch), ['chart']) if len(fetch) else {}
+        if cachename == 'CASHFLOW':
+            df = self._cashflow(list(fetch)) if len(fetch) else pd.DataFrame()
+        elif cachename == 'DAILY':
+            # fetch new data
+            df_dict = self.fetch(list(fetch), ['chart']) if len(fetch) else {}
 
-        # join in new data
-        for k in df_dict:
-            self._cache['DAILY'] = self.merge(dat, df_dict[k], index_fields)
+        if dict_:
+            # join in new data
+            for k in df_dict:
+                if not df_dict[k].empty:
+                    self._cache[cachename] = self.merge(dat, df_dict[k], index_fields)
+        else:
+            # join in new data
+            if not df.empty:
+                self._cache[cachename] = self.merge(dat, df, index_fields)
 
         # reset index to previous
-        self._cache['DAILY'].set_index(index_fields, inplace=True)
+        self._cache[cachename].set_index(index_fields, inplace=True)
 
         # sort on original indexes
-        self._cache['DAILY'].sort_index(level=self._cache['DAILY'].index.names[::-1])
+        self._cache[cachename].sortlevel()
 
-        return self._cache['DAILY']
+        return self._cache[cachename].loc[(slice(None), symbols), :]
+
+    def cashflow(self, symbols):
+        return self._get(symbols, 'CASHFLOW', ['reportDate', 'symbol'], None, 1)
 
     def fetch(self, symbols, fields):
         print('fetching %s %s' % (symbols, fields))
@@ -59,6 +80,12 @@ class Cache(object):
             df.reset_index(inplace=True)
 
         return df_dict
+
+    def _cashflow(self, symbols):
+        print('fetching %s %s' % (symbols, 'cashflow'))
+        df = pd.concat([self._client.cashFlowDF(symbol) for symbol in symbols])
+        df.reset_index(inplace=True)
+        return df
 
     def merge(self, df1, df2, index_fields):
         # merge on new data
