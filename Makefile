@@ -1,8 +1,8 @@
 tests: clean ## Clean and Make unit tests
-	python3 -m pytest tests --cov=hedgedata
+	python3 -m pytest -v tests --cov=hedgedata
 
 test: clean lint ## run the tests for travis CI
-	@ python3 -m pytest tests --cov=hedgedata
+	@ python3 -m pytest -v tests --cov=hedgedata
 
 lint: ## run linter
 	pylint hedgedata || echo
